@@ -2,7 +2,7 @@
 #
 # Author(s):        Ryan Irujo
 # Inception:        06.02.2013
-# Last Modified:    06.03.2013
+# Last Modified:    06.05.2013
 #
 # Description:      Script that determines the length of time a Server has been up. This Script can be modified
 #                   slightly to work within Orchestrator by removing the Initial Parameter check for the 
@@ -15,6 +15,10 @@
 #                   - Added Variables at the end of the Script that are returned to Orchestrator.
 #                   - Additional Documentation added in Description section.
 #
+#		    06.05.2013 - [R. Irujo]
+#		    - Added Error Checking so that Errors are exposed and stored in a variable called ReturnedErrors.
+#		      Anything that is found is returned back to Orchestrator in the ErrorResults variable at the end
+#		      of the script.
 #
 # Syntax:          ./Get-SystemUptime.ps1 <Remote_Server>
 #
@@ -36,7 +40,7 @@ $Creds    = New-Object System.Management.Automation.PSCredential($Username,$Pass
 
 
 # Returned Values from the Remote Host are stored in the $Results Variable.
-$Results = Invoke-Command -ComputerName $Computer -Credential $Creds -ScriptBlock {
+$Results = Invoke-Command -ComputerName $Computer -Credential $Creds -ErrorAction SilentlyContinue -ErrorVariable ReturnedErrors -ScriptBlock {
 
 	# Getting LastBootUptime
 	$LastBootUptime = (gwmi -Class Win32_OperatingSystem).LastBootUptime
@@ -61,7 +65,10 @@ $Results = Invoke-Command -ComputerName $Computer -Credential $Creds -ScriptBloc
 # Final Results are passed to the PowerShell Console		
 echo "Current Uptime (Minutes): $($($Results).CurrentUptimeMinutes)"
 
+#Any Error Messages are passed back to the PowerShell Console.
+echo "Returned Errors: $($($ReturnedErrors).ErrorDetails)"
+
 # Final Results are passed to Orchestrator
 $CurrentUptimeMinutes = $Results.CurrentUptimeMinutes
-
+$ErrorResults         = echo "$($($ReturnedErrors).ErrorDetails)"
 
