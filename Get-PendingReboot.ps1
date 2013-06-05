@@ -3,7 +3,7 @@
 # Original Author:  Brian Wilhite
 # Author(s):        Ryan Irujo
 # Inception:        05.30.2013
-# Last Modified:    05.31.2013
+# Last Modified:    06.05.2013
 #
 # Description:      Script that determines if a Server is in a Pending Reboot State. This script is a modified version of Brian Wilhite's script
 #                   which can be found at the link below:
@@ -19,6 +19,10 @@
 #                   - Wrappe the main part of the script in an Invoke-Command Cmdlet for use in Orchestrator.
 #                   - Added Variables at the end of the Script that are returned to Orchestrator.
 #
+#		    06.05.2013 - [R. Irujo]
+#		    - Added Error Checking so that Errors are exposed and stored in a variable called ReturnedErrors.
+#		      Anything that is found is returned back to Orchestrator in the ErrorResults variable at the end
+#		      of the script.
 #
 #
 # Syntax:          ./Get-PendingReboot.ps1 <Remote_Server>
@@ -41,7 +45,7 @@ $Creds    = New-Object System.Management.Automation.PSCredential($Username,$Pass
 
 
 # Returned Values from the Remote Host are stored in the $Results Variable.
-$Results  = Invoke-Command -ComputerName $Computer -Credential $Creds -ScriptBlock {
+$Results  = Invoke-Command -ComputerName $Computer -Credential $Creds -ErrorAction SilentlyContinue -ErrorVariable ReturnedErrors -ScriptBlock {
 
 	# Adjusting ErrorActionPreference to stop on all errors, since using [Microsoft.Win32.RegistryKey]
 	# does not have a native ErrorAction Parameter
@@ -167,6 +171,9 @@ echo "Windows Update: $($($Results).WindowsUpdate)"
 echo "PendingFileRenameOperations: $($($Results).PendFileRename)"
 echo "Reboot Pending: $($($Results).RebootPending)"
 
+#Any Error Messages are passed back to the PowerShell Console.
+echo "Returned Errors: $($($ReturnedErrors).ErrorDetails)"
+
 # Returning Results Back to Orchestrator.
 $ComputerName              = $Results.Computer
 $CCMClientSDK              = $Results.CCMClientSDK
@@ -174,5 +181,5 @@ $ComponentBasedServicing   = $Results.CBServicing
 $WindowsUpdate             = $Results.WindowsUpdate
 $PendingFileRenameOptions  = $Results.PendFileRename
 $RebootPending             = $Results.RebootPending
-
+$ErrorResults              = echo "$($($ReturnedErrors).ErrorDetails)"
 
